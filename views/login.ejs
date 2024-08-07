@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .i {
+            display: flex;
+            flex-direction: column;
+            padding: 50px;
+            gap: 20px;
+
+        }
+
+        .a {
+            margin: 10px;
+        }
+    </style>
+</head>
+
+<body class="body">
+    <h1>Login</h1>
+    <form class="i" action="/api/auth/login" method="post">
+        <input type="email" name="email" required placeholder="Enter email...">
+        <input type="password" name="password" required placeholder="Enter password...">
+        <button>login</button>
+    </form>
+    <a class="a" href="/">signup</a>
+    <% if (message) { %>
+        <p id="flash-message">
+            <%= message %>
+        </p>
+        <% } %>
+</body>
+<script>
+    const flash = document.getElementById('flash-message');
+    setTimeout(() => {
+
+        if (flash) {
+            flash.style.display = 'none';
+        }
+
+    }, 2000)
+</script>
+
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .message {
+            font-size: large;
+            font-weight: 300;
+            color: red;
+        }
+
+        .a {
+            color: blue;
+            list-style: none;
+            text-decoration: none;
+            font-size: large;
+            font-weight: 500;
+            margin: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 10px;
+        }
+
+        .img {
+            padding-bottom: 10px;
+            height: 90px;
+        }
+
+        #curve_chart {
+            border: 1px solid black;
+        }
+
+        .details {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            margin: 20px;
+        }
+
+        .sp {
+            font-weight: bold;
+            font-size: 20px;
+            padding-right: 20px;
+            /* border-bottom: 1px solid black; */
+            margin-bottom: 20px;
+        }
+
+        .form {
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .inp {
+            margin: 20px;
+        }
+
+        .co {
+            margin: 10px;
+
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <img class="img" src="<%= data?.image?.large %>" alt="">
+        <%= data?.name %>(<%= data?.symbol %>)
+                <div id="curve_chart" style="width: 900px; height: 500px"></div>
+
+                <form action="/api/user/notify" class="form" method="post">
+                    <div class="inp">
+                        <input type="number" id="price-input" autocomplete="off" name="price"
+                            placeholder="Set the price...">
+                        <input type="hidden" id="price-input" name="crypto_id" value="<%= data.id %>">
+                        <input type="hidden" name="email" value="<%= userEmail %>">
+                    </div>
+                    <div class="co">
+                        <label>Notify when:</label>
+                        <select id="condition-select" name="option">
+                            <option value="less">Less than selected price</option>
+                            <option value="greater">Greater than selected price</option>
+                        </select>
+                    </div>
+                    <button>Notify through email</button>
+                </form>
+                <% if(message){%>
+                    <p class="message">
+                        <%= message %>
+                    </p>
+                    <% } %>
+
+                        <div class="details">
+                            <div>
+                                <span class="sp">Market cap rank : </span>
+                                <%= data?.market_cap_rank %>
+                            </div>
+                            <div>
+                                <span class="sp">Current price : </span>
+                                $<span id="current-price">
+                                    <%= data?.market_data?.current_price?.usd %>
+                                </span>
+                            </div>
+                            <div>
+                                <span class="sp">Watchlist portfolio users : </span>
+                                <%= data?.watchlist_portfolio_users %>
+                            </div>
+                            <a class="a" href="/home">-back-</a>
+                        </div>
+    </div>
+
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            google.charts.load('current', { 'packages': ['corechart'] });
+            google.charts.setOnLoadCallback(initChart);
+
+            const dataTable = [['Time(Hrs:Min)', 'Price(USD)']];
+            let chart;
+
+            function initChart() {
+                chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+            }
+
+            function drawChart(prices) {
+                dataTable.length = 1; // Clear existing dataTable
+
+                prices.forEach(([timestamp, price]) => {
+                    const date = new Date(timestamp);
+                    const timeString = `${date.getHours()}:${date.getMinutes()}`;
+                    dataTable.push([timeString, price]);
+                });
+
+                const data = google.visualization.arrayToDataTable(dataTable);
+                const options = {
+                    title: `Performance of ${"<%= data?.name %>"} over the last 24 hours`,
+                    curveType: 'function',
+                    legend: { position: 'bottom' }
+                };
+                chart.draw(data, options);
+            }
+
+            const socket = new WebSocket('ws://localhost:8080');
+
+
+            socket.onopen = () => {
+                console.log('Connected to WebSocket server');
+
+                const message = {
+                    type: 'subscribe',
+                    id: "<%= id %>"
+                };
+                socket.send(JSON.stringify(message));
+            };
+
+            socket.onmessage = (event) => {
+                const receivedMessage = JSON.parse(event.data);
+                console.log('Message from server:', receivedMessage);
+
+                // Handle price updates
+                if (receivedMessage.type === 'priceUpdate') {
+                    const prices = receivedMessage.prices;
+
+                    // Redraw the chart with the new prices
+                    drawChart(prices);
+
+                    // Update the current price display
+                    const currentPriceElement = document.getElementById('current-price');
+                    const latestPrice = prices[prices.length - 1][1];
+                    currentPriceElement.textContent = latestPrice.toFixed(2);
+                }
+            };
+
+            socket.onclose = () => {
+                console.log('Disconnected from WebSocket server');
+            };
+
+            socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            const messageBox = document.querySelector('.message');
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 2500);
+        });
+    </script>
+</body>
+
+</html>

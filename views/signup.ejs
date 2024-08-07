@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup</title>
+    <style>
+        .body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .i {
+            display: flex;
+            flex-direction: column;
+            padding: 50px;
+            gap: 20px;
+
+        }
+    </style>
+</head>
+
+<body class="body">
+    <h1>Signup</h1>
+    <form method="post" class="i" action="/api/auth/signup">
+        <input type="text" required name="username" placeholder="Enter username...">
+        <input type="email" required name="email" placeholder="Enter email...">
+        <input type="password" required name="password" placeholder="Enter password...">
+        <button type="submit">Signup</button>
+    </form>
+
+    <a href="/login">Login</a>
+
+    <% if (message) { %>
+        <p id="flash-message">
+            <%= message %>
+        </p>
+        <% } %>
+</body>
+<script>
+    const flash = document.getElementById('flash-message');
+    setTimeout(() => {
+
+        if (flash) {
+            flash.style.display = 'none';
+        }
+
+    }, 2000)
+</script>
+
+</html>
