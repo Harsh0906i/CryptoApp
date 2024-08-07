@@ -155,13 +155,6 @@ async function checkPrice() {
                         sendEmail = true;
                     }
 
-                    if(!sendEmail){
-                        console.log(sendEmail);
-                        console.log(notification.option)
-                        console.log(notification.price)
-                        console.log(coinData?.market_data?.current_price?.usd)
-                    }
-
                     if (sendEmail) {
                         // Send email and update notification
                         await sendEmailfunction(user.email, notification.cryptoId, notification.price);
