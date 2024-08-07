@@ -125,38 +125,64 @@ async function checkPrice() {
         headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.CRYPTO_API_KEY }
     };
 
-    const users = await userSchema.find({ notification: { $exists: true, $not: { $size: 0 } } });
-    for (const user of users) {
-        for (const notification of user.notification) {
-            const coinRes = await fetch(`https://api.coingecko.com/api/v3/coins/${notification.cryptoId}`, options);
-            const coinData = await coinRes.json();
+    try {
+        // Fetch users with notifications
+        const users = await userSchema.find({ notification: { $exists: true, $not: { $size: 0 } } });
 
-            let sendEmail = false;
-            if (notification.option === 'less' && coinData?.market_data?.current_price?.usd <= notification.price) {
-                console.log(`Preference matched for less ${user.email}`);
-                sendEmail = true;
-            }
+        for (const user of users) {
+            // Process each user's notifications
+            for (const notification of user.notification) {
+                try {
+                    // Fetch coin data
+                    const coinRes = await fetch(`https://api.coingecko.com/api/v3/coins/${notification.cryptoId}`, options);
 
-            if (notification.option === 'greater' && coinData?.market_data?.current_price?.usd >= notification.price) {
-                console.log(`Preference matched for greater ${user.email}`);
-                sendEmail = true;
-            }
+                    if (!coinRes.ok) {
+                        console.error(`Failed to fetch data for ${notification.cryptoId}`);
+                        continue;
+                    }
 
-            if (notification.option === null && notification.price === null) {
-                return;
-            }
+                    const coinData = await coinRes.json();
+                    let sendEmail = false;
 
-            if (sendEmail) {
-                sendEmailfunction(user.email, notification.cryptoId, notification.price)
-                notification.price = null;
-                notification.option = null;
-                await user.save();
+                    // Check if the notification condition is met
+                    if (notification.option === 'less' && coinData?.market_data?.current_price?.usd <= notification.price) {
+                        console.log(`Preference matched for less ${user.email}`);
+                        sendEmail = true;
+                    }
+
+                    if (notification.option === 'greater' && coinData?.market_data?.current_price?.usd >= notification.price) {
+                        console.log(`Preference matched for greater ${user.email}`);
+                        sendEmail = true;
+                    }
+
+                    if(!sendEmail){
+                        console.log(sendEmail);
+                        console.log(notification.option)
+                        console.log(notification.price)
+                        console.log(coinData?.market_data?.current_price?.usd)
+                    }
+
+                    if (sendEmail) {
+                        // Send email and update notification
+                        await sendEmailfunction(user.email, notification.cryptoId, notification.price);
+                        notification.price = null;
+                        notification.option = null;
+
+                        // Save updated user document
+                        await user.save();
+                    }
+                } catch (error) {
+                    console.error(`Error processing notification for user ${user.email}:`, error);
+                }
             }
         }
+    } catch (error) {
+        console.error('Error fetching users or processing notifications:', error);
     }
 }
 
-cron.schedule('* * * * *', checkPrice);
+
+cron.schedule('* * * * *', checkPrice)
 
 io.on('connection', (socket) => {
     console.log('Client connected');
@@ -218,7 +244,7 @@ io.on('connection', (socket) => {
 
 
 // Start the server
-const PORT = process.env.PORT || 8080;
+const PORT = 8080;
 server.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
