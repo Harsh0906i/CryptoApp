@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -155,49 +156,43 @@
                 chart.draw(data, options);
             }
 
-            // Include the Socket.IO client script
-            const script = document.createElement('script');
-            script.src = "https://cdn.socket.io/4.0.0/socket.io.min.js";
-            script.onload = () => {
-                // Initialize the Socket.IO client
-                const socket = io('https://crypto-app-alpha-three.vercel.app/');
+            // Initialize the Socket.IO client
+            const socket = io('https://crypto-app-alpha-three.vercel.app');
 
-                socket.on('connect', () => {
-                    console.log('Connected to WebSocket server');
+            socket.on('connect', () => {
+                console.log('Connected to WebSocket server');
 
-                    const message = {
-                        type: 'subscribe',
-                        id: "<%= id %>"
-                    };
-                    socket.emit('subscribe', message);
-                });
+                const message = {
+                    type: 'subscribe',
+                    id: "<%= id %>"
+                };
+                socket.emit('subscribe', message);
+            });
 
-                socket.on('priceUpdate', (receivedMessage) => {
-                    console.log('Message from server:', receivedMessage);
+            socket.on('priceUpdate', (receivedMessage) => {
+                console.log('Message from server:', receivedMessage);
 
-                    // Handle price updates
-                    if (receivedMessage.type === 'priceUpdate') {
-                        const prices = receivedMessage.prices;
+                // Handle price updates
+                if (receivedMessage.type === 'priceUpdate') {
+                    const prices = receivedMessage.prices;
 
-                        // Redraw the chart with the new prices
-                        drawChart(prices);
+                    // Redraw the chart with the new prices
+                    drawChart(prices);
 
-                        // Update the current price display
-                        const currentPriceElement = document.getElementById('current-price');
-                        const latestPrice = prices[prices.length - 1][1];
-                        currentPriceElement.textContent = latestPrice.toFixed(2);
-                    }
-                });
+                    // Update the current price display
+                    const currentPriceElement = document.getElementById('current-price');
+                    const latestPrice = prices[prices.length - 1][1];
+                    currentPriceElement.textContent = latestPrice.toFixed(2);
+                }
+            });
 
-                socket.on('disconnect', () => {
-                    console.log('Disconnected from WebSocket server');
-                });
+            socket.on('disconnect', () => {
+                console.log('Disconnected from WebSocket server');
+            });
 
-                socket.on('error', (error) => {
-                    console.error('WebSocket error:', error);
-                });
-            };
-            document.head.appendChild(script);
+            socket.on('error', (error) => {
+                console.error('WebSocket error:', error);
+            });
 
             const messageBox = document.querySelector('.message');
             setTimeout(() => {
@@ -205,6 +200,7 @@
             }, 2500);
         });
     </script>
+
 
 </body>
 
