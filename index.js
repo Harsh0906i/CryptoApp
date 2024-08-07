@@ -12,7 +12,7 @@ const WebSocket = require('ws');
 const cron = require('node-cron');
 const cors = require('cors');
 const userRouter = require('./routes/user');
-const http=require('http');
+const http = require('http');
 const userSchema = require('./model/user');
 const verify = require('./utils/verify');
 const nodemailer = require('nodemailer');
@@ -23,6 +23,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: '*',
+        methods: ['GET', 'POST']
     }
 });
 
