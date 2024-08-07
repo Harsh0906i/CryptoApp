@@ -12,9 +12,19 @@ const WebSocket = require('ws');
 const cron = require('node-cron');
 const cors = require('cors');
 const userRouter = require('./routes/user');
+const http=require('http');
 const userSchema = require('./model/user');
 const verify = require('./utils/verify');
 const nodemailer = require('nodemailer');
+const { Server } = require('socket.io');
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+    }
+});
 
 app.use(cors())
 app.use(flash());
@@ -147,21 +157,11 @@ async function checkPrice() {
 
 cron.schedule('* * * * *', checkPrice);
 
-const server = app.listen('8080', () => {
-    console.log('server is listening!')
-});
-
-const wss = new WebSocket.Server({ server });
-
-wss.on('connection', (ws) => {
-
+io.on('connection', (socket) => {
     console.log('Client connected');
 
-    ws.on('message', async (message) => {
-        console.log('Received message from client: %s', message);
-        const data = JSON.parse(message);
-        if (data.type === 'subscribe' && data.id) {
-
+    socket.on('subscribe', async (data) => {
+        if (data.id) {
             const options = {
                 method: 'GET',
                 headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.CRYPTO_API_KEY }
@@ -180,37 +180,36 @@ wss.on('connection', (ws) => {
                             timestamp: Date.now(),
                             prices: priceData.prices
                         };
-                        ws.send(JSON.stringify(update));
-
+                        socket.emit('priceUpdate', update);
                     } else {
                         console.error('Price data not found for id:', data.id);
-                        ws.send(JSON.stringify({
-                            type: 'error',
-                            message: 'Price data not found'
-                        }));
+                        socket.emit('error', 'Price data not found');
                     }
                 } catch (error) {
                     console.error('Error fetching price data:', error);
-                    ws.send(JSON.stringify({
-                        type: 'error',
-                        message: 'Error fetching price data'
-                    }));
+                    socket.emit('error', 'Error fetching price data');
                 }
             }
 
             fetchPrice();
             const interval = setInterval(fetchPrice, 5000);
 
-            ws.on('close', () => {
+            socket.on('disconnect', () => {
                 clearInterval(interval);
                 console.log('Client disconnected');
             });
         }
     });
 
-    ws.on('error', (error) => {
-        console.error('WebSocket error:', error);
+    socket.on('error', (error) => {
+        console.error('Socket error:', error);
     });
+});
+
+// Start the server
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => {
+    console.log(`Server is listening on port ${PORT}`);
 });
 
 console.log('WebSocket server is running on ws://localhost:8080');

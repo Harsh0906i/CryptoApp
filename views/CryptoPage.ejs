@@ -126,6 +126,7 @@
 
     <script type="text/javascript">
         document.addEventListener('DOMContentLoaded', () => {
+
             google.charts.load('current', { 'packages': ['corechart'] });
             google.charts.setOnLoadCallback(initChart);
 
@@ -154,43 +155,49 @@
                 chart.draw(data, options);
             }
 
-            const socket = new WebSocket('wss://crypto-app-alpha-three.vercel.app');
+            // Include the Socket.IO client script
+            const script = document.createElement('script');
+            script.src = "https://cdn.socket.io/4.0.0/socket.io.min.js";
+            script.onload = () => {
+                // Initialize the Socket.IO client
+                const socket = io('https://crypto-app-alpha-three.vercel.app/');
 
-            socket.onopen = () => {
-                console.log('Connected to WebSocket server');
+                socket.on('connect', () => {
+                    console.log('Connected to WebSocket server');
 
-                const message = {
-                    type: 'subscribe',
-                    id: "<%= id %>"
-                };
-                socket.send(JSON.stringify(message));
+                    const message = {
+                        type: 'subscribe',
+                        id: "<%= id %>"
+                    };
+                    socket.emit('subscribe', message);
+                });
+
+                socket.on('priceUpdate', (receivedMessage) => {
+                    console.log('Message from server:', receivedMessage);
+
+                    // Handle price updates
+                    if (receivedMessage.type === 'priceUpdate') {
+                        const prices = receivedMessage.prices;
+
+                        // Redraw the chart with the new prices
+                        drawChart(prices);
+
+                        // Update the current price display
+                        const currentPriceElement = document.getElementById('current-price');
+                        const latestPrice = prices[prices.length - 1][1];
+                        currentPriceElement.textContent = latestPrice.toFixed(2);
+                    }
+                });
+
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from WebSocket server');
+                });
+
+                socket.on('error', (error) => {
+                    console.error('WebSocket error:', error);
+                });
             };
-
-            socket.onmessage = (event) => {
-                const receivedMessage = JSON.parse(event.data);
-                console.log('Message from server:', receivedMessage);
-
-                // Handle price updates
-                if (receivedMessage.type === 'priceUpdate') {
-                    const prices = receivedMessage.prices;
-
-                    // Redraw the chart with the new prices
-                    drawChart(prices);
-
-                    // Update the current price display
-                    const currentPriceElement = document.getElementById('current-price');
-                    const latestPrice = prices[prices.length - 1][1];
-                    currentPriceElement.textContent = latestPrice.toFixed(2);
-                }
-            };
-
-            socket.onclose = () => {
-                console.log('Disconnected from WebSocket server');
-            };
-
-            socket.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
+            document.head.appendChild(script);
 
             const messageBox = document.querySelector('.message');
             setTimeout(() => {
@@ -198,6 +205,7 @@
             }, 2500);
         });
     </script>
+
 </body>
 
 </html>
