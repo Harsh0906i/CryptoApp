@@ -168,7 +168,12 @@ io.on('connection', (socket) => {
             };
 
             console.log(`Client subscribed to updates for id: ${data.id}`);
+
+            let fetching = false;
+
             async function fetchPrice() {
+                if (fetching) return;
+                fetching = true;
                 try {
                     const response = await fetch(`https://api.coingecko.com/api/v3/coins/${data.id}/market_chart?vs_currency=usd&days=1`, options);
                     const priceData = await response.json();
@@ -188,11 +193,15 @@ io.on('connection', (socket) => {
                 } catch (error) {
                     console.error('Error fetching price data:', error);
                     socket.emit('error', 'Error fetching price data');
+                } finally {
+                    fetching = false;
                 }
             }
 
             await fetchPrice();
-            const interval = setInterval(fetchPrice, 5000);
+            const interval = setInterval(async () => {
+                await fetchPrice();
+            }, 5000);
 
             socket.on('disconnect', () => {
                 clearInterval(interval);
@@ -205,6 +214,7 @@ io.on('connection', (socket) => {
         console.error('Socket error:', error);
     });
 });
+
 
 // Start the server
 const PORT = process.env.PORT || 8080;
