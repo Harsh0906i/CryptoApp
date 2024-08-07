@@ -15,6 +15,12 @@ const userRouter = require('./routes/user');
 const userSchema = require('./model/user');
 const verify = require('./utils/verify');
 const nodemailer = require('nodemailer');
+const https = require('https');
+
+const server = https.createServer({
+    cert: fs.readFileSync('/path/to/cert.pem'),
+    key: fs.readFileSync('/path/to/key.pem')
+}, app);
 
 app.use(cors())
 app.use(flash());
@@ -147,7 +153,7 @@ async function checkPrice() {
 
 cron.schedule('* * * * *', checkPrice);
 
-const server = app.listen('8080', () => {
+server.listen('8080', () => {
     console.log('server is listening!')
 });
 
