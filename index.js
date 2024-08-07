@@ -221,9 +221,9 @@ io.on('connection', (socket) => {
                 }
             }
 
-            // fetchPrice();
+            fetchPrice();
             const interval = setInterval(async () => {
-                await fetchPrice();
+                fetchPrice();
             }, 5000);
 
             socket.on('disconnect', () => {
