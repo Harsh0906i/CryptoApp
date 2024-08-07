@@ -153,8 +153,9 @@
                 };
                 chart.draw(data, options);
             }
-            // const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-            const socket = new WebSocket('wss://crypto-app-alpha-three.vercel.app');
+
+            const socket = new WebSocket('ws://localhost:8080');
+
 
             socket.onopen = () => {
                 console.log('Connected to WebSocket server');
