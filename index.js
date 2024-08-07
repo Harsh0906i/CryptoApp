@@ -174,11 +174,11 @@ async function checkPrice() {
     }
 }
 
-
-// cron.schedule('* * * * *', checkPrice)
 setInterval(()=>{
     checkPrice()
 },20000)
+
+
 
 io.on('connection', (socket) => {
     console.log('Client connected');
