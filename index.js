@@ -1,8 +1,8 @@
-require('dotenv').config()
+require('dotenv').config();
 const express = require('express');
-const app = express();
+const fs = require('fs');
 const path = require('path');
-const cookie = require('cookie-parser')
+const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const flash = require('express-flash');
 const session = require('express-session');
@@ -17,14 +17,11 @@ const verify = require('./utils/verify');
 const nodemailer = require('nodemailer');
 const https = require('https');
 
-const server = https.createServer({
-    cert: fs.readFileSync('/path/to/cert.pem'),
-    key: fs.readFileSync('/path/to/key.pem')
-}, app);
+const app = express();
 
-app.use(cors())
+app.use(cors());
 app.use(flash());
-app.use(cookie());
+app.use(cookieParser());
 app.use(session({
     secret: 'your-secret-key',
     resave: false,
@@ -44,9 +41,10 @@ main()
     }).catch((err) => {
         console.log(err);
     });
+
 async function main() {
     await mongoose.connect(process.env.MONGOURI);
-};
+}
 
 const transporter = nodemailer.createTransport({
     service: 'Gmail',
@@ -73,30 +71,30 @@ async function sendEmailfunction(to, cryptoId, price) {
 }
 
 app.get('/', async (req, res) => {
-    res.render('signup', { message: req.flash('message') })
-})
+    res.render('signup', { message: req.flash('message') });
+});
 
 app.get('/login', (req, res) => {
-    res.render('login', { message: req.flash('message') })
-})
+    res.render('login', { message: req.flash('message') });
+});
 
 app.get('/home', verify, async (req, res) => {
     const options = { method: 'GET', headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.CRYPTO_API_KEY } };
     try {
-        const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd', options)
+        const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd', options);
         const data = await response.json();
         res.render('home', { message: req.flash('message'), data });
     } catch (error) {
-        console.log(error)
+        console.log(error);
     }
-})
+});
 
 app.get('/:id', verify, async (req, res) => {
     const { id } = req.params;
     const { _id } = req.user;
-    const user = await userSchema.findById(_id)
+    const user = await userSchema.findById(_id);
     if (!user) {
-        return
+        return;
     }
     const userEmail = user.email;
 
@@ -105,14 +103,13 @@ app.get('/:id', verify, async (req, res) => {
         headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.CRYPTO_API_KEY }
     };
     try {
-        const response = await fetch(`https://api.coingecko.com/api/v3/coins/${id}`, options)
+        const response = await fetch(`https://api.coingecko.com/api/v3/coins/${id}`, options);
         const data = await response.json();
         res.render('CryptoPage', { message: req.flash('message'), data, id, userEmail });
     } catch (error) {
-        console.log('error occured!', error)
+        console.log('error occurred!', error);
     }
 });
-
 
 async function checkPrice() {
     const options = {
@@ -142,7 +139,7 @@ async function checkPrice() {
             }
 
             if (sendEmail) {
-                sendEmailfunction(user.email, notification.cryptoId, notification.price)
+                sendEmailfunction(user.email, notification.cryptoId, notification.price);
                 notification.price = null;
                 notification.option = null;
                 await user.save();
@@ -153,21 +150,24 @@ async function checkPrice() {
 
 cron.schedule('* * * * *', checkPrice);
 
-server.listen('8080', () => {
-    console.log('server is listening!')
+const server = https.createServer({
+    cert: fs.readFileSync('/path/to/cert.pem'),
+    key: fs.readFileSync('/path/to/key.pem')
+}, app);
+
+server.listen(8080, () => {
+    console.log('HTTPS server is listening on port 8080');
 });
 
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
-
     console.log('Client connected');
 
     ws.on('message', async (message) => {
         console.log('Received message from client: %s', message);
         const data = JSON.parse(message);
         if (data.type === 'subscribe' && data.id) {
-
             const options = {
                 method: 'GET',
                 headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.CRYPTO_API_KEY }
@@ -187,7 +187,6 @@ wss.on('connection', (ws) => {
                             prices: priceData.prices
                         };
                         ws.send(JSON.stringify(update));
-
                     } else {
                         console.error('Price data not found for id:', data.id);
                         ws.send(JSON.stringify({
@@ -219,4 +218,4 @@ wss.on('connection', (ws) => {
     });
 });
 
-console.log('WebSocket server is running on ws://localhost:8080');
+console.log('WebSocket server is running on wss://localhost:8080');
