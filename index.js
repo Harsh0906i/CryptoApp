@@ -16,15 +16,14 @@ const http = require('http');
 const userSchema = require('./model/user');
 const verify = require('./utils/verify');
 const nodemailer = require('nodemailer');
-const { Server } = require('socket.io');
-
+const socketIo = require('socket.io');
 
 const server = http.createServer(app);
 
-const io = new Server(server, {
+const io = socketIo(server, {
     cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
+        origin: "https://crypto-app-alpha-three.vercel.app",
+        methods: ["GET", "POST"]
     }
 });
 
