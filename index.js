@@ -174,9 +174,9 @@ async function checkPrice() {
     }
 }
 
-setInterval(()=>{
+setInterval(() => {
     checkPrice()
-},20000)
+}, 20000)
 
 
 
@@ -221,7 +221,7 @@ io.on('connection', (socket) => {
                 }
             }
 
-             fetchPrice();
+            // fetchPrice();
             const interval = setInterval(async () => {
                 await fetchPrice();
             }, 5000);
