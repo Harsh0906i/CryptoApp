@@ -142,7 +142,7 @@ async function checkPrice() {
             }
 
             if (notification.option === null && notification.price === null) {
-                console.log('nothing to email');
+                return;
             }
 
             if (sendEmail) {
@@ -191,7 +191,7 @@ io.on('connection', (socket) => {
                 }
             }
 
-            fetchPrice();
+            await fetchPrice();
             const interval = setInterval(fetchPrice, 5000);
 
             socket.on('disconnect', () => {
