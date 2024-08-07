@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         * {
             margin: 0;
@@ -154,8 +155,6 @@
                 };
                 chart.draw(data, options);
             }
-            const { io } = require("socket.io-client");
-
             // Initialize the Socket.IO client
             const socket = io('https://crypto-app-alpha-three.vercel.app');
 
