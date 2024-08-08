@@ -85,15 +85,12 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Select all card elements
             const cards = document.querySelectorAll('.card');
 
             cards.forEach(card => {
                 card.addEventListener('click', () => {
                     const id = card.getAttribute('data-id');
-                    // Construct the URL dynamically
                     const url = `http://localhost:8080/${encodeURIComponent(id)}`;
-                    // Redirect to the constructed URL
                     window.location.href = url;
                 });
             });

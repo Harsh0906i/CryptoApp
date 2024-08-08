@@ -124,14 +124,11 @@ async function checkPrice() {
     };
 
     try {
-        // Fetch users with notifications
         const users = await userSchema.find({ notification: { $exists: true, $not: { $size: 0 } } });
 
         for (const user of users) {
-            // Process each user's notifications
             for (const notification of user.notification) {
                 try {
-                    // Fetch coin data
                     const coinRes = await fetch(`https://api.coingecko.com/api/v3/coins/${notification.cryptoId}`, options);
 
                     if (!coinRes.ok) {
@@ -142,7 +139,6 @@ async function checkPrice() {
                     const coinData = await coinRes.json();
                     let sendEmail = false;
 
-                    // Check if the notification condition is met
                     if (notification.option === 'less' && coinData?.market_data?.current_price?.usd <= notification.price) {
                         console.log(`Preference matched for less ${user.email}`);
                         sendEmail = true;
@@ -154,12 +150,9 @@ async function checkPrice() {
                     }
 
                     if (sendEmail) {
-                        // Send email and update notification
                         await sendEmailfunction(user.email, notification.cryptoId, notification.price);
                         notification.price = null;
                         notification.option = null;
-
-                        // Save updated user document
                         await user.save();
                     }
                 } catch (error) {
@@ -235,7 +228,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// Start the server
 const PORT = 8080;
 server.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);

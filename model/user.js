@@ -10,8 +10,7 @@ const notificationSchema = new mongoose.Schema({
     option: {
         type: String
     }
-}, { _id: false }); // Use _id: false to not create an _id field for each item in the array
-
+}, { _id: false });
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
@@ -22,7 +21,7 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
     },
-    notification: [notificationSchema] // Define `notification` as an array of `notificationSchema`
+    notification: [notificationSchema]
 });
 
 const User = mongoose.model('Users', userSchema);
