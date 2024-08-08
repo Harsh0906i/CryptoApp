@@ -13,6 +13,12 @@
             padding: 0;
         }
 
+        .heading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
         .message {
             font-size: large;
             font-weight: 300;
@@ -50,13 +56,15 @@
             flex-direction: column;
             justify-content: space-between;
             margin: 20px;
+            border: 1px solid gray;
+            border-radius: 20px;
+            padding: 10px;
         }
 
         .sp {
             font-weight: bold;
             font-size: 20px;
             padding-right: 20px;
-            /* border-bottom: 1px solid black; */
             margin-bottom: 20px;
         }
 
@@ -64,11 +72,21 @@
             margin: 20px;
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
+            border: 1px solid gray;
+            border-radius: 20px;
         }
 
         .inp {
             margin: 20px;
+        }
+
+        .cover {
+            display: flex;
+            justify-content: space-between;
+
         }
 
         .co {
@@ -82,47 +100,55 @@
     <div class="container">
         <img class="img" src="<%= data?.image?.large %>" alt="">
         <%= data?.name %>(<%= data?.symbol %>)
-                <div id="curve_chart" style="width: 900px; height: 500px"></div>
+                <div id="curve_chart" style="width: 900px; height: 400px"></div>
+                <div class="cover">
+                    <a class="a" href="/home">-back-</a>
 
-                <form action="/api/user/notify" class="form" method="post">
-                    <div class="inp">
-                        <input type="number" id="price-input" autocomplete="off" name="price"
-                            placeholder="Set the price...">
-                        <input type="hidden" id="price-input" name="crypto_id" value="<%= data.id %>">
-                        <input type="hidden" name="email" value="<%= userEmail %>">
-                    </div>
-                    <div class="co">
-                        <label>Notify when:</label>
-                        <select id="condition-select" name="option">
-                            <option value="less">Less than selected price</option>
-                            <option value="greater">Greater than selected price</option>
-                        </select>
-                    </div>
-                    <button>Notify through email</button>
-                </form>
-                <% if(message){%>
-                    <p class="message">
-                        <%= message %>
-                    </p>
-                    <% } %>
-
-                        <div class="details">
-                            <div>
-                                <span class="sp">Market cap rank : </span>
-                                <%= data?.market_cap_rank %>
-                            </div>
-                            <div>
-                                <span class="sp">Current price : </span>
-                                $<span id="current-price">
-                                    <%= data?.market_data?.current_price?.usd %>
-                                </span>
-                            </div>
-                            <div>
-                                <span class="sp">Watchlist portfolio users : </span>
-                                <%= data?.watchlist_portfolio_users %>
-                            </div>
-                            <a class="a" href="/home">-back-</a>
+                    <form action="/api/user/notify" class="form" method="post">
+                        <h2>Price alert</h2>
+                        <div class="inp">
+                            <input type="number" required id="price-input" autocomplete="off" name="price"
+                                placeholder="Set your preferred price...">
+                            <input type="hidden" id="price-input" name="crypto_id" value="<%= data.id %>">
+                            <input type="hidden" name="email" value="<%= userEmail %>">
                         </div>
+                        <div class="co">
+                            <label>Notify when:</label>
+                            <select id="condition-select" name="option">
+                                <option value="less">Less than selected price</option>
+                                <option value="greater">Greater than selected price</option>
+                            </select>
+                        </div>
+                        <button>Notify through email</button>
+                        <% if(message){%>
+                            <p class="message">
+                                <%= message %>
+                            </p>
+                            <% } %>
+                    </form>
+
+                    <div class="details">
+                        <div class="heading">
+                            <h2>Coin details</h2>
+                        </div>
+                        <div>
+                            <span class="sp">Market cap rank : </span>
+                            <%= data?.market_cap_rank %>
+                        </div>
+                        <div>
+                            <span class="sp">Current price : </span>
+                            $<span id="current-price">
+                                <%= data?.market_data?.current_price?.usd %>
+                            </span>
+                        </div>
+                        <div>
+                            <span class="sp">Watchlist portfolio users : </span>
+                            <%= data?.watchlist_portfolio_users %>
+                        </div>
+
+                    </div>
+                </div>
+
     </div>
 
     <script type="text/javascript">
@@ -156,7 +182,7 @@
                 chart.draw(data, options);
             }
             // Initialize the Socket.IO client
-            const socket = io('https://crypto-app-alpha-three.vercel.app/');
+            const socket = io('http://localhost:8080');
 
             socket.on('connect', () => {
                 console.log('Connected to WebSocket server');

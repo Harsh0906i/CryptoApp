@@ -8,7 +8,6 @@ const flash = require('express-flash');
 const session = require('express-session');
 const authrouter = require('./routes/auth');
 const mongoose = require('mongoose');
-const WebSocket = require('ws');
 const cron = require('node-cron');
 const cors = require('cors');
 const userRouter = require('./routes/user');
@@ -17,12 +16,11 @@ const userSchema = require('./model/user');
 const verify = require('./utils/verify');
 const nodemailer = require('nodemailer');
 const socketIo = require('socket.io');
-
 const server = http.createServer(app);
 
 const io = socketIo(server, {
     cors: {
-        origin: "https://crypto-app-alpha-three.vercel.app",
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
@@ -66,7 +64,7 @@ async function sendEmailfunction(to, cryptoId, price) {
         from: process.env.EMAIL,
         to: to,
         subject: `Price Alert for (${cryptoId})`,
-        text: `The price for (${cryptoId}) has reached your set preference for ${price}.`
+        text: `The price for (${cryptoId}) has reached your set preference for $${price}.`
     };
 
     try {
@@ -237,11 +235,8 @@ io.on('connection', (socket) => {
     });
 });
 
-
 // Start the server
 const PORT = 8080;
 server.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
-
-console.log('WebSocket server is running on ws://localhost:8080');

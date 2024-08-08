@@ -92,7 +92,7 @@
                 card.addEventListener('click', () => {
                     const id = card.getAttribute('data-id');
                     // Construct the URL dynamically
-                    const url = `https://crypto-app-alpha-three.vercel.app/${encodeURIComponent(id)}`;
+                    const url = `http://localhost:8080/${encodeURIComponent(id)}`;
                     // Redirect to the constructed URL
                     window.location.href = url;
                 });
