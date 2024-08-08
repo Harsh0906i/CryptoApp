@@ -2,6 +2,7 @@ require('dotenv').config()
 const express = require('express');
 const app = express();
 const path = require('path');
+const NodeCache = require('node-cache');
 const cookie = require('cookie-parser')
 const bodyParser = require('body-parser');
 const flash = require('express-flash');
@@ -16,7 +17,7 @@ const verify = require('./utils/verify');
 const nodemailer = require('nodemailer');
 const socketIo = require('socket.io');
 const server = http.createServer(app);
-
+const myCache = new NodeCache({ stdTTL: 8 });
 const io = socketIo(server, {
     cors: {
         origin: "*",
@@ -74,6 +75,24 @@ async function sendEmailfunction(to, cryptoId, price) {
     }
 }
 
+async function fetchPriceFromCacheOrAPI(cryptoId, options) {
+    const cachedPrice = myCache.get(cryptoId);
+    if (cachedPrice) {
+        console.log('Returning cached price');
+        return cachedPrice;
+    } else {
+        const response = await fetch(`https://api.coingecko.com/api/v3/coins/${cryptoId}/market_chart?vs_currency=usd&days=1`, options);
+        const priceData = await response.json();
+
+        if (priceData && priceData.prices) {
+            myCache.set(cryptoId, priceData);
+            console.log('Returning fetched price and caching it');
+        }
+
+        return priceData;
+    }
+}
+
 app.get('/', async (req, res) => {
     res.render('signup', { message: req.flash('message') })
 })
@@ -114,7 +133,6 @@ app.get('/:id', verify, async (req, res) => {
         console.log('error occured!', error)
     }
 });
-
 
 async function checkPrice() {
     const options = {
@@ -168,7 +186,6 @@ setInterval(() => {
     checkPrice()
 }, 20000)
 
-
 io.on('connection', (socket) => {
     console.log('Client connected');
 
@@ -187,9 +204,7 @@ io.on('connection', (socket) => {
                 if (fetching) return;
                 fetching = true;
                 try {
-                    const response = await fetch(`https://api.coingecko.com/api/v3/coins/${data.id}/market_chart?vs_currency=usd&days=1`, options);
-                    const priceData = await response.json();
-
+                    const priceData = await fetchPriceFromCacheOrAPI(data.id, options);
                     if (priceData && priceData.prices) {
                         const update = {
                             type: 'priceUpdate',
