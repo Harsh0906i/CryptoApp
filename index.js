@@ -10,11 +10,11 @@ const session = require('express-session');
 const authrouter = require('./routes/auth');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const checkPrice = require('./utils/alerting');
 const userRouter = require('./routes/user');
 const http = require('http');
 const userSchema = require('./model/user');
 const verify = require('./utils/verify');
-const nodemailer = require('nodemailer');
 const socketIo = require('socket.io');
 const server = http.createServer(app);
 const myCache = new NodeCache({ stdTTL: 8 });
@@ -51,47 +51,6 @@ async function main() {
     await mongoose.connect(process.env.MONGOURI);
 };
 
-const transporter = nodemailer.createTransport({
-    service: 'Gmail',
-    auth: {
-        user: process.env.EMAIL,
-        pass: process.env.PASSWORD
-    }
-});
-
-async function sendEmailfunction(to, cryptoId, price) {
-    const mailOptions = {
-        from: process.env.EMAIL,
-        to: to,
-        subject: `Price Alert for (${cryptoId})`,
-        text: `The price for (${cryptoId}) has reached your set preference for $${price}.`
-    };
-
-    try {
-        await transporter.sendMail(mailOptions);
-        console.log('Email sent successfully');
-    } catch (error) {
-        console.error('Error sending email:', error);
-    }
-}
-
-async function fetchPriceFromCacheOrAPI(cryptoId, options) {
-    const cachedPrice = myCache.get(cryptoId);
-    if (cachedPrice) {
-        console.log('Returning cached price');
-        return cachedPrice;
-    } else {
-        const response = await fetch(`https://api.coingecko.com/api/v3/coins/${cryptoId}/market_chart?vs_currency=usd&days=1`, options);
-        const priceData = await response.json();
-
-        if (priceData && priceData.prices) {
-            myCache.set(cryptoId, priceData);
-            console.log('Returning fetched price and caching it');
-        }
-
-        return priceData;
-    }
-}
 
 app.get('/', async (req, res) => {
     res.render('signup', { message: req.flash('message') })
@@ -134,58 +93,27 @@ app.get('/:id', verify, async (req, res) => {
     }
 });
 
-async function checkPrice() {
-    const options = {
-        method: 'GET',
-        headers: { accept: 'application/json', 'x-cg-demo-api-key': process.env.CRYPTO_API_KEY }
-    };
-
-    try {
-        const users = await userSchema.find({ notification: { $exists: true, $not: { $size: 0 } } });
-
-        for (const user of users) {
-            for (const notification of user.notification) {
-                try {
-                    const coinRes = await fetch(`https://api.coingecko.com/api/v3/coins/${notification.cryptoId}`, options);
-
-                    if (!coinRes.ok) {
-                        console.error(`Failed to fetch data for ${notification.cryptoId}`);
-                        continue;
-                    }
-
-                    const coinData = await coinRes.json();
-                    let sendEmail = false;
-
-                    if (notification.option === 'less' && coinData?.market_data?.current_price?.usd <= notification.price) {
-                        console.log(`Preference matched for less ${user.email}`);
-                        sendEmail = true;
-                    }
-
-                    if (notification.option === 'greater' && coinData?.market_data?.current_price?.usd >= notification.price) {
-                        console.log(`Preference matched for greater ${user.email}`);
-                        sendEmail = true;
-                    }
-
-                    if (sendEmail) {
-                        await sendEmailfunction(user.email, notification.cryptoId, notification.price);
-                        notification.price = null;
-                        notification.option = null;
-                        await user.save();
-                    }
-                } catch (error) {
-                    console.error(`Error processing notification for user ${user.email}:`, error);
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error fetching users or processing notifications:', error);
-    }
-}
-
 setInterval(() => {
     checkPrice()
 }, 20000)
 
+async function fetchPriceFromCacheOrAPI(cryptoId, options) {
+    const cachedPrice = myCache.get(cryptoId);
+    if (cachedPrice) {
+        console.log('Returning cached price');
+        return cachedPrice;
+    } else {
+        const response = await fetch(`https://api.coingecko.com/api/v3/coins/${cryptoId}/market_chart?vs_currency=usd&days=1`, options);
+        const priceData = await response.json();
+
+        if (priceData && priceData.prices) {
+            myCache.set(cryptoId, priceData);
+            console.log('Returning fetched price and caching it');
+        }
+
+        return priceData;
+    }
+}
 io.on('connection', (socket) => {
     console.log('Client connected');
 
